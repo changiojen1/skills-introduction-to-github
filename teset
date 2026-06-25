@@ -1,0 +1,15 @@
+BIN=./server_sinopac_uat_c5d2e6 VAL=0.70 python3 - <<'PY'
+import os,struct,zlib,re
+p=os.environ["BIN"];v=os.environ["VAL"];b=open(p,"rb").read()
+m=b"MEI\014\013\012\013\016";i=b.rfind(m);ck=struct.unpack("!8sIIII64s",b[i:i+88]);s=i+88-ck[1];to=s+ck[2];tl=ck[3];q=to
+while q<to+tl:
+ e=struct.unpack("!IIIIBc",b[q:q+18]);q+=18;n=b[q:q+e[0]-18].rstrip(b"\0").decode();q+=e[0]-18
+ if n.endswith("vllm_config.yml"):
+  o,l,_,c,_=e;ao=s+o;raw=b[ao:ao+l];txt=(zlib.decompress(raw) if c else raw).decode()
+  nt=re.sub(r"(?m)^gpu-memory-utilization:.*$",f"gpu-memory-utilization: {v}",txt)
+  assert len(nt)==len(txt)
+  nr=zlib.compress(nt.encode()) if c else nt.encode();assert len(nr)<=l
+  open(p+".bak","wb").write(b)
+  open(p,"wb").write(b[:ao]+nr+b"\0"*(l-len(nr))+b[ao+l:])
+  break
+PY
